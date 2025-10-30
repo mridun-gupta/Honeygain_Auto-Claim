@@ -19,8 +19,9 @@ This script is designed to be run on a daily schedule using GitHub Actions. It s
 3. Add the following two repository secrets:  
    * MAIL\_JWD: Your Honeygain account email.  
    * PASS\_JWD: Your Honeygain account password.  
-4. **Run the Action:** You can run the workflow manually from the **Actions** tab, or wait for it to run on its daily schedule (set for 00:05 UTC by default).
+4. **Run the Action:** You can run the workflow manually from the **Actions** tab, or wait for it to run on its daily schedule (set for 06:30 UTC by default).
 
 ## **License**
+
 
 This project is licensed under the MIT License. See the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
