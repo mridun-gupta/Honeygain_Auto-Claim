@@ -1,0 +1,75 @@
+# This is the name of your GitHub Action workflow
+name: Honeygain Auto-Claim
+
+# These are the triggers for the action.
+on:
+  # This allows you to run the workflow manually from the Actions tab on GitHub.
+  workflow_dispatch:
+
+  # This runs the workflow on a schedule.
+  schedule:
+    # This is a "cron" string. It means "run at 12:00 IST (06:30 UTC) every day."
+    # You can change this to run at a different time.
+    - cron: '30 6 * * *'
+
+# This section defines the actual "job" that will run.
+jobs:
+  # You can name the job anything. I'll call it "run-autoclaim".
+  run-autoclaim:
+    # This tells GitHub to use the latest version of an Ubuntu (Linux) virtual machine.
+    runs-on: ubuntu-latest
+
+    # These are the individual steps the machine will follow.
+    steps:
+      # Step 1: Check out your repository code
+      # This downloads your code (specifically, your autoclaim.py script) onto the runner.
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up a Python environment
+      # This installs Python onto the machine.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          # We'll use Python 3.11. You can change this version if you want.
+          python-version: '3.11'
+
+      # Step 3: Install Python dependencies
+      # Your script imports 'requests', which isn't part of the standard Python library.
+      # This step installs it using pip.
+      - name: Install dependencies
+        run: pip install requests
+
+      # Step 4: Run the Python script
+      # This is the main step. It executes your script.
+      - name: Run Honeygain Auto-Claim script
+        run: python autoclaim.py
+        # This 'env' block is crucial. It sets the environment variables
+        # that your script is looking for.
+        env:
+          # This tells your script to use the GitHub Actions login method.
+          IsGit: '1'
+          
+          # This securely pulls your email from GitHub Secrets.
+          MAIL_JWD: ${{ secrets.MAIL_JWD }}
+          
+          # This securely pulls your password from GitHub Secrets.
+          PASS_JWD: ${{ secrets.PASS_JWD }}
+
+      # Step 5: (Optional) Upload artifacts
+      # After the script runs, it creates 'Logs' and 'Config' folders.
+      # This step uploads them as "artifacts" so you can download and check them later.
+      # This is very useful for debugging!
+      - name: Upload Logs
+        if: always() # This makes sure logs are uploaded even if the script fails
+        uses: actions/upload-artifact@v4
+        with:
+          name: honeygain-logs
+          path: Logs/
+          
+      - name: Upload Config
+        if: always() # Upload config/token file too
+        uses: actions/upload-artifact@v4
+        with:
+          name: honeygain-config
+          path: Config/
