@@ -227,6 +227,19 @@ def achievements_claim(s: requests.session) -> bool:
         return True
 
 
+def _safe_json(resp: Response) -> dict | None:
+    """
+    Safely parse JSON from a response, returning None if parsing fails.
+    :param resp: Response object from requests
+    :return: parsed JSON as dict or None if parsing fails
+    """
+    try:
+        return resp.json()
+    except ValueError:
+        logging.error('Non-JSON response from %s: %s', getattr(resp, 'url', ''), resp.text[:200])
+        return None
+
+
 def main() -> None:
     """
     Automatically claims the Lucky pot and prints out current stats.
@@ -253,26 +266,34 @@ def main() -> None:
             token: str = gen_token(s, True)
             header['Authorization'] = f'Bearer {token}'
         # gets the pot winning credits
-        pot_winning: Response = s.get(urls['pot'], headers=header)
-        pot_winning: dict = pot_winning.json()
+        pot_winning_resp: Response = s.get(urls['pot'], headers=header)
+        pot_winning: dict | None = _safe_json(pot_winning_resp)
 
-        if settings['lucky_pot'] and pot_winning['data']['winning_credits'] is None:
+        pot_data = pot_winning.get('data', {}) if pot_winning else {}
+        winning_credits = pot_data.get('winning_credits')
+        if settings['lucky_pot'] and winning_credits is None:
             # The post below sends the request, so that the pot claim gets made
-            pot_claim: Response = s.post(urls['pot'], headers=header)
-            pot_claim: dict = pot_claim.json()
-            print(f'Claimed {pot_claim["data"]["credits"]} Credits.')
-            logging.info(f'Claimed {pot_claim["data"]["credits"]} Credits.')
+            pot_claim_resp: Response = s.post(urls['pot'], headers=header)
+            pot_claim: dict | None = _safe_json(pot_claim_resp)
+            if pot_claim is not None:
+                claimed_credits = pot_claim.get('data', {}).get('credits')
+                print(f'Claimed {claimed_credits} Credits.')
+                logging.info(f'Claimed {claimed_credits} Credits.')
 
         # gets the pot winning credits
-        pot_winning: Response = s.get(urls['pot'], headers=header)
-        pot_winning: dict = pot_winning.json()
-        print(f'Won today {pot_winning["data"]["winning_credits"]} Credits.')
-        logging.info(f'Won today {pot_winning["data"]["winning_credits"]} Credits.')
+        pot_winning_resp: Response = s.get(urls['pot'], headers=header)
+        pot_winning: dict | None = _safe_json(pot_winning_resp)
+        if pot_winning is not None:
+            winning_credits = pot_winning.get('data', {}).get('winning_credits')
+            print(f'Won today {winning_credits} Credits.')
+            logging.info(f'Won today {winning_credits} Credits.')
         # gets the current balance
-        balance: Response = s.get(urls['balance'], headers=header)
-        balance: dict = balance.json()
-        print(f'You currently have {balance["data"]["payout"]["credits"]} Credits.')
-        logging.info(f'You currently have {balance["data"]["payout"]["credits"]} Credits.')
+        balance_resp: Response = s.get(urls['balance'], headers=header)
+        balance: dict | None = _safe_json(balance_resp)
+        if balance is not None:
+            payout_credits = balance.get('data', {}).get('payout', {}).get('credits')
+            print(f'You currently have {payout_credits} Credits.')
+            logging.info(f'You currently have {payout_credits} Credits.')
         print('Closing HoneygainAutoClaim!')
         logging.info('Closing HoneygainAutoClaim!')
 
