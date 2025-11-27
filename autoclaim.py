@@ -235,7 +235,7 @@ def _safe_json(resp: Response) -> dict | None:
     """
     try:
         return resp.json()
-    except ValueError:
+    except json.JSONDecodeError:
         logging.error('Non-JSON response from %s: %s', getattr(resp, 'url', ''), resp.text[:200])
         return None
 
@@ -276,7 +276,7 @@ def main() -> None:
             pot_claim_resp: Response = s.post(urls['pot'], headers=header)
             pot_claim: dict | None = _safe_json(pot_claim_resp)
             if pot_claim is not None:
-                claimed_credits = pot_claim.get('data', {}).get('credits')
+                claimed_credits = pot_claim.get('data', {}).get('credits', 0)
                 print(f'Claimed {claimed_credits} Credits.')
                 logging.info(f'Claimed {claimed_credits} Credits.')
 
@@ -284,14 +284,14 @@ def main() -> None:
         pot_winning_resp: Response = s.get(urls['pot'], headers=header)
         pot_winning: dict | None = _safe_json(pot_winning_resp)
         if pot_winning is not None:
-            winning_credits = pot_winning.get('data', {}).get('winning_credits')
+            winning_credits = pot_winning.get('data', {}).get('winning_credits', 0)
             print(f'Won today {winning_credits} Credits.')
             logging.info(f'Won today {winning_credits} Credits.')
         # gets the current balance
         balance_resp: Response = s.get(urls['balance'], headers=header)
         balance: dict | None = _safe_json(balance_resp)
         if balance is not None:
-            payout_credits = balance.get('data', {}).get('payout', {}).get('credits')
+            payout_credits = balance.get('data', {}).get('payout', {}).get('credits', 0)
             print(f'You currently have {payout_credits} Credits.')
             logging.info(f'You currently have {payout_credits} Credits.')
         print('Closing HoneygainAutoClaim!')
